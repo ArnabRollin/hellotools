@@ -3,17 +3,25 @@
 # Imports
 
 from sys import argv, stderr
+from typing import Any
 
 # region Variables
 
-options: tuple[tuple[str, ...], ...] = (("-h", "--help"), ("-v", "--version"))
+options_aliases: tuple[tuple[str, ...], ...] = (
+    ("-h", "--help"), ("-v", "--version"))
 option_comms: tuple[str, ...] = ("help", "version")
+
+commands_aliases: tuple[tuple[str, ...], ...] = tuple([("comms", "commands")])
+command_comms: tuple[str, ...] = tuple(["commands"])
 help_ = \
     """
 Usage: hellotools [options...] [function] [args...]
 
 Common options:
-    -h --help
+    -h --help - Show this message.
+    -v --version - Show version information.
+
+Use `hellotools commands` or `hellotools comms` to show commands.
 """
 # endregion
 
@@ -36,15 +44,50 @@ class Version:
         return str_version
 
 
+class Command:
+    def __init__(self, name: str, description: str, **optional_vals: Any) -> None:
+        self.name = name
+        self.description = description
+        self.optional_vals = optional_vals
+
+    def __str__(self) -> str:
+        help_ = f"{self.name}: {self.description}"
+
+        if self.optional_vals:
+            for k, v in self.optional_vals.items():
+                help_ += f"\t{k}: {v}"
+
+        return help_
+
+
+class CommandList:
+    def __init__(self, commands: list[Command] = []) -> None:
+        self.commands = commands
+
+    def register(self, command: Command) -> None:
+        self.commands.append(command)
+
+    def __str__(self) -> str:
+        help_ = ""
+
+        for command in self.commands:
+            help_ += str(command) + "\n"
+
+        return help_
+
 # endregion
 
 # region Functions
 
 
+def err_write(msg: str) -> int:
+    return stderr.write(msg + "\n")
+
+
 def check_option(option: str) -> str | None:
     opt_idx: int
 
-    for idx, aliases in enumerate(options):
+    for idx, aliases in enumerate(options_aliases):
         if option in aliases:
             opt_idx = idx
             break
@@ -55,25 +98,62 @@ def check_option(option: str) -> str | None:
         return option_comms[opt_idx]
 
 
+def check_command(command: str) -> str | None:
+    comm_idx: int
+
+    for idx, aliases in enumerate(commands_aliases):
+        if command in aliases:
+            comm_idx = idx
+            break
+    else:
+        comm_idx = -1
+
+    if comm_idx >= 0:
+        return command_comms[comm_idx]
+
+
+# endregion
+
+# region Enums
+
+class EnumExitCodes:
+    SUCCESS = 0
+    NO_ARGS = 10
+    INVALID_OPTION = 1
+    INVALID_COMMAND = 2
+    UNKNOWN_ERROR = 404
+
 # endregion
 
 # Code
+
+
+commands = CommandList()
+commands.register(Command("commands", "List commands"))
 
 if len(argv) > 1:
     args = argv[1:]
 
     if args[0].startswith("-"):
-        comm = check_option(args[0])
-        match comm:
+        opt = check_option(args[0])
+        match opt:
             case "help":
                 print(help_)
-                exit(0)
+                exit(EnumExitCodes.SUCCESS)
             case "version":
                 print(Version(0, 1, 0, True))
-                exit(0)
+                exit(EnumExitCodes.SUCCESS)
             case _:
-                stderr.write("Invalid option: " + args[0])
-                exit(1)
+                err_write("Invalid option: " + args[0])
+                exit(EnumExitCodes.INVALID_OPTION)
+    else:
+        comm = check_command(args[0])
+        match comm:
+            case "commands":
+                print(commands)
+            case _:
+                err_write("Invalid command: " + args[0])
+                exit(EnumExitCodes.INVALID_COMMAND)
 else:
     print(help_)
-    exit(1)
+    exit(EnumExitCodes.NO_ARGS)
