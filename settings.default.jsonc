@@ -1,0 +1,7 @@
+{
+  /*
+    Unfortunately, there is no way to set "default" settings for vscode,
+    so please copy this file to the .vscode directory and remove the '.default' extension
+    */
+  "python.analysis.typeCheckingMode": "basic"
+}
