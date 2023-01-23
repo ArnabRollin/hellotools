@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+
+# Imports
+
+from sys import argv, stderr
+
+# region Variables
+
+options: tuple[tuple[str, ...], ...] = (("-h", "--help"), ("-v", "--version"))
+option_comms: tuple[str, ...] = ("help", "version")
+help_ = \
+    """
+Usage: hellotools [options...] [function] [args...]
+
+Common options:
+    -h --help
+"""
+# endregion
+
+# region Classes
+
+
+class Version:
+    def __init__(self, major: int, minor: int = 0, patch: int = 0, pre_release: bool = False) -> None:
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+        self.pre_realease = pre_release
+
+    def __str__(self) -> str:
+        str_version = f"{self.major}.{self.minor}.{self.patch}"
+
+        if self.pre_realease:
+            str_version += " (Pre-Release)"
+
+        return str_version
+
+
+# endregion
+
+# region Functions
+
+
+def check_option(option: str) -> str | None:
+    opt_idx: int
+
+    for idx, aliases in enumerate(options):
+        if option in aliases:
+            opt_idx = idx
+            break
+    else:
+        opt_idx = -1
+
+    if opt_idx >= 0:
+        return option_comms[opt_idx]
+
+
+# endregion
+
+# Code
+
+if len(argv) > 1:
+    args = argv[1:]
+
+    if args[0].startswith("-"):
+        comm = check_option(args[0])
+        match comm:
+            case "help":
+                print(help_)
+                exit(0)
+            case "version":
+                print(Version(0, 1, 0, True))
+                exit(0)
+            case _:
+                stderr.write("Invalid option: " + args[0])
+                exit(1)
+else:
+    print(help_)
+    exit(1)
